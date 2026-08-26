@@ -1,13 +1,5 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-// Add Material Symbols to the head via index.css — icons used here match the Stitch design
-const services = [
-  { name: 'Electrician', slug: 'electrician', icon: 'bolt', description: 'Wiring, repairs, installations', color: 'bg-primary/10 text-primary' },
-  { name: 'Plumber', slug: 'plumber', icon: 'water_drop', description: 'Pipes, leaks, bathroom fitting', color: 'bg-secondary/10 text-secondary' },
-  { name: 'Carpenter', slug: 'carpenter', icon: 'carpenter', description: 'Furniture, doors, woodwork', color: 'bg-tertiary/10 text-tertiary' },
-  { name: 'Tailor', slug: 'tailor', icon: 'styler', description: 'Stitching, alterations, designs', color: 'bg-primary/10 text-primary' },
-  { name: 'Maintenance', slug: 'maintenance', icon: 'handyman', description: 'General repairs and upkeep', color: 'bg-secondary/10 text-secondary' },
-];
 
 const steps = [
   { step: '1', title: 'Choose a Service', desc: 'Browse from 5 service categories and find the right type of professional.', icon: 'category' },
@@ -16,6 +8,21 @@ const steps = [
 ];
 
 function Home() {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:5001/api/services')
+      .then(res => res.json())
+      .then(data => {
+        setServices(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch services:', err);
+        setLoading(false);
+      });
+  }, []);
   return (
     <main className="pt-[72px] min-h-screen bg-background">
 
@@ -54,19 +61,23 @@ function Home() {
           <p className="text-on-surface-variant text-[15px] mb-8">Click a category to browse available professionals</p>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {services.map((service) => (
-              <Link
-                key={service.slug}
-                to={`/services/${service.slug}`}
-                className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer no-underline group"
-              >
-                <div className={`w-14 h-14 rounded-xl ${service.color} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
-                  <span className="material-symbols-outlined text-[26px]">{service.icon}</span>
-                </div>
-                <h3 className="font-semibold text-on-background text-[15px]">{service.name}</h3>
-                <p className="text-on-surface-variant text-[12px] mt-1">{service.description}</p>
-              </Link>
-            ))}
+            {loading ? (
+              <div className="col-span-full text-center py-8 text-on-surface-variant">Loading services...</div>
+            ) : (
+              services.map((service) => (
+                <Link
+                  key={service.slug}
+                  to={`/services/${service.slug}`}
+                  className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer no-underline group"
+                >
+                  <div className={`w-14 h-14 rounded-xl ${service.color} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+                    <span className="material-symbols-outlined text-[26px]">{service.icon}</span>
+                  </div>
+                  <h3 className="font-semibold text-on-background text-[15px]">{service.name}</h3>
+                  <p className="text-on-surface-variant text-[12px] mt-1">{service.description}</p>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>

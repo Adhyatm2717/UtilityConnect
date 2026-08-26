@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import providers from '../data/providers';
 import ProviderCard from '../components/ProviderCard';
 import FilterPanel from '../components/FilterPanel';
 
@@ -16,6 +15,9 @@ const SERVICE_LABELS = {
 function ServiceListing() {
   const { service } = useParams();
 
+  const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('recommended');
   const [filters, setFilters] = useState({
@@ -23,6 +25,19 @@ function ServiceListing() {
     availability: 'all',
     price: 'all',
   });
+
+  useEffect(() => {
+    fetch('http://localhost:5001/api/providers')
+      .then(res => res.json())
+      .then(data => {
+        setProviders(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch providers:', err);
+        setLoading(false);
+      });
+  }, []);
 
   // Update a single filter key
   function handleFilterChange(key, value) {
@@ -66,7 +81,7 @@ function ServiceListing() {
     else if (sortBy === 'distance') result = [...result].sort((a, b) => a.distance - b.distance);
 
     return result;
-  }, [service, search, filters, sortBy]);
+  }, [providers, service, search, filters, sortBy]);
 
   const serviceLabel = SERVICE_LABELS[service] || 'Providers';
 
@@ -139,7 +154,11 @@ function ServiceListing() {
           </div>
 
           {/* Provider Cards Grid */}
-          {displayedProviders.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20">
+              <p className="text-on-surface-variant text-[16px]">Loading providers...</p>
+            </div>
+          ) : displayedProviders.length === 0 ? (
             <div className="text-center py-20">
               <span className="material-symbols-outlined text-[48px] text-outline-variant">search_off</span>
               <p className="text-on-surface-variant text-[16px] mt-4">No providers found matching your criteria.</p>

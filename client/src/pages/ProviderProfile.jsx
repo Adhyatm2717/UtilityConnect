@@ -1,10 +1,36 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import providers from '../data/providers';
 import Rating from '../components/Rating';
 
 function ProviderProfile() {
   const { slug } = useParams();
-  const provider = providers.find((p) => p.slug === slug);
+  const [provider, setProvider] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`http://localhost:5001/api/providers/${slug}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Provider not found');
+        return res.json();
+      })
+      .then(data => {
+        setProvider(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch provider:', err);
+        setProvider(null);
+        setLoading(false);
+      });
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center pt-[72px]">
+        <h1 className="text-[20px] font-semibold text-on-surface mt-4">Loading provider...</h1>
+      </div>
+    );
+  }
 
   // If no provider found, show a not-found message
   if (!provider) {
