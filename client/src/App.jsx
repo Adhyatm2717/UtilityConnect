@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Home from './pages/Home';
 import ServiceListing from './pages/ServiceListing';
 import ProviderProfile from './pages/ProviderProfile';
+import BookingFlow from './pages/BookingFlow';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/services/:service" element={<ServiceListing />} />
         <Route path="/providers/:slug" element={<ProviderProfile />} />
+        <Route path="/book/:slug" element={<BookingFlow />} />
       </Routes>
     </BrowserRouter>
   );

@@ -72,13 +72,12 @@ function ProviderCard({ provider }) {
             >
               View Profile
             </Link>
-            <button
-              className="text-[13px] font-medium bg-primary text-on-primary px-4 py-2 rounded-xl shadow-sm transition-colors cursor-not-allowed opacity-80"
-              title="Booking available in next milestone"
-              disabled
+            <Link
+              to={`/book/${provider.slug}`}
+              className="text-[13px] font-medium bg-primary text-on-primary px-4 py-2 rounded-xl shadow-sm transition-colors no-underline hover:bg-primary-container"
             >
               Book Now
-            </button>
+            </Link>
           </div>
         </div>
       </div>

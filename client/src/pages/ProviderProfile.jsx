@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import providers from '../data/providers';
 import Rating from '../components/Rating';
 
@@ -165,16 +165,15 @@ function ProviderProfile() {
                 </select>
               </div>
 
-              {/* Book Now is not functional yet — future milestone */}
+              {/* Book Now — links to booking flow */}
               <div>
-                <button
-                  className="w-full bg-primary text-on-primary text-[14px] font-medium py-3 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
-                  disabled
-                  title="Booking will be available in the next milestone"
+                <Link
+                  to={`/book/${provider.slug}`}
+                  className="w-full bg-primary text-on-primary text-[14px] font-medium py-3 rounded-xl flex items-center justify-center gap-2 no-underline hover:bg-primary-container transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                  Book Now (Coming Soon)
-                </button>
+                  Book Now
+                </Link>
                 <p className="text-[12px] text-on-surface-variant text-center mt-2">
                   💳 Payment handled directly with provider
                 </p>
