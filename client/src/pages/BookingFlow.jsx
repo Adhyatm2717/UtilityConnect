@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import providers from '../data/providers';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import providersData from '../data/providers';
 import StepService from '../components/booking/StepService';
 import StepProblem from '../components/booking/StepProblem';
 import StepLocation from '../components/booking/StepLocation';
@@ -19,10 +20,13 @@ const STEPS = [
 
 function BookingFlow() {
   const { slug } = useParams();
-  const provider = providers.find((p) => p.slug === slug);
+  const navigate = useNavigate();
+  const { token, isAuthenticated } = useAuth();
 
+  const [provider, setProvider] = useState(() => providersData.find((p) => p.slug === slug) || null);
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState([]);
+  const [submittingBooking, setSubmittingBooking] = useState(false);
 
   // Booking state
   const [selectedService, setSelectedService] = useState('');
@@ -34,10 +38,23 @@ function BookingFlow() {
   const [timeSlot, setTimeSlot] = useState('');
   const [bookingResult, setBookingResult] = useState(null);
 
+  useEffect(() => {
+    fetch(`http://localhost:5001/api/providers/${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) {
+          setProvider(data);
+        }
+      })
+      .catch(() => {});
+  }, [slug]);
+
   // Pre-select first service when provider loads
-  if (provider && !selectedService && provider.services.length > 0) {
-    setSelectedService(provider.services[0].name);
-  }
+  useEffect(() => {
+    if (provider && !selectedService && provider.services && provider.services.length > 0) {
+      setSelectedService(provider.services[0].name);
+    }
+  }, [provider, selectedService]);
 
   // Provider not found
   if (!provider) {
@@ -84,44 +101,60 @@ function BookingFlow() {
     return errs.length === 0;
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (!validate()) return;
 
     if (currentStep === 4) {
-      // Review → Confirm: generate booking
-      const bookingId = 'UC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      const booking = {
-        bookingId,
-        providerId: provider.id,
+      // Check authentication
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+
+      setSubmittingBooking(true);
+      setErrors([]);
+
+      const body = {
+        providerId: provider._id || provider.id,
         providerSlug: provider.slug,
         selectedService,
         description,
-        images: images.map((img) => ({ name: img.name, preview: img.preview })),
         location,
         scheduleType,
         date: scheduleType === 'now' ? new Date().toISOString().split('T')[0] : date,
-        timeSlot: scheduleType === 'now' ? null : timeSlot,
-        status: 'Booking Requested',
-        createdAt: new Date().toISOString(),
+        timeSlot: scheduleType === 'now' ? 'As soon as possible' : timeSlot,
+        estimatedPrice: provider.pricing || provider.startingPrice || 499,
       };
 
-      // Save to localStorage
       try {
-        const existing = JSON.parse(localStorage.getItem('uc_bookings') || '[]');
-        existing.push(booking);
-        localStorage.setItem('uc_bookings', JSON.stringify(existing));
-      } catch {
-        // Silently fail if storage is unavailable
-      }
+        const res = await fetch('http://localhost:5001/api/bookings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
 
-      setBookingResult(booking);
-      setCurrentStep(5);
+        const data = await res.json();
+        if (!res.ok) {
+          setErrors([data.error || 'Failed to submit booking. Please try again.']);
+          setSubmittingBooking(false);
+          return;
+        }
+
+        setBookingResult(data);
+        setCurrentStep(5);
+      } catch (err) {
+        setErrors(['Unable to connect to server to submit booking.']);
+      } finally {
+        setSubmittingBooking(false);
+      }
     } else {
       setCurrentStep((prev) => Math.min(prev + 1, 5));
     }
 
     setErrors([]);
-    // Scroll to top on step change
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -287,9 +320,12 @@ function BookingFlow() {
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 bg-primary text-on-primary text-[14px] font-medium px-6 py-2.5 rounded-xl hover:bg-primary-container transition-colors cursor-pointer shadow-sm"
+              disabled={submittingBooking}
+              className="flex items-center gap-2 bg-primary text-on-primary text-[14px] font-medium px-6 py-2.5 rounded-xl hover:bg-primary-container transition-colors cursor-pointer shadow-sm disabled:opacity-50"
             >
-              {currentStep === 4 ? (
+              {submittingBooking ? (
+                'Submitting...'
+              ) : currentStep === 4 ? (
                 <>
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
                   Confirm Booking

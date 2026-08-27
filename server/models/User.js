@@ -23,7 +23,10 @@ const userSchema = new mongoose.Schema({
     default: 'customer',
   },
   location: {
-    type: String,
+    address: { type: String },
+    area: { type: String },
+    city: { type: String },
+    pin: { type: String },
   },
   createdAt: {
     type: Date,

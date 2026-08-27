@@ -40,8 +40,8 @@ const bookingSchema = new mongoose.Schema({
   estimatedPrice: Number,
   status: {
     type: String,
-    enum: ['Booking Requested', 'requested', 'accepted', 'in-progress', 'completed', 'cancelled'],
-    default: 'Booking Requested',
+    enum: ['requested', 'accepted', 'in-progress', 'completed', 'cancelled', 'Booking Requested'],
+    default: 'requested',
   },
   createdAt: {
     type: Date,

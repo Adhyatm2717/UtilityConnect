@@ -30,11 +30,16 @@ function ServiceListing() {
     fetch('http://localhost:5001/api/providers')
       .then(res => res.json())
       .then(data => {
-        setProviders(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setProviders(data);
+        } else {
+          import('../data/providers').then((m) => setProviders(m.default));
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to fetch providers:', err);
+        import('../data/providers').then((m) => setProviders(m.default));
         setLoading(false);
       });
   }, []);

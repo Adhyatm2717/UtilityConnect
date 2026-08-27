@@ -24,10 +24,14 @@ app.use(express.json());
 const providerRoutes = require('./routes/providers');
 const serviceRoutes = require('./routes/services');
 const bookingRoutes = require('./routes/bookings');
+const authRoutes = require('./routes/auth');
+const reviewRoutes = require('./routes/reviews');
 
 app.use('/api/providers', providerRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

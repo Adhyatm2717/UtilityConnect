@@ -18,9 +18,12 @@ function ProviderProfile() {
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to fetch provider:', err);
-        setProvider(null);
-        setLoading(false);
+        console.error('Failed to fetch provider from API, using fallback:', err);
+        import('../data/providers').then((m) => {
+          const found = m.default.find((p) => p.slug === slug);
+          setProvider(found || null);
+          setLoading(false);
+        });
       });
   }, [slug]);
 

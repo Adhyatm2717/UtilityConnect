@@ -30,7 +30,10 @@ const providerSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  availability: String,
+  availability: {
+    type: String,
+    default: 'Available',
+  },
   location: String,
   distance: Number,
   about: String,
