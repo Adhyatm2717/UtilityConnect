@@ -66,7 +66,7 @@ const registerUserWithRole = (forcedRole) => [
           startingPrice: 499,
           rating: 5.0,
           reviewCount: 0,
-          verified: true,
+          verified: false,   // Admin must approve before provider appears in discovery
           availability: 'Available',
           location: locStr,
           distance: 2.5,

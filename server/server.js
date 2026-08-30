@@ -26,12 +26,18 @@ const serviceRoutes = require('./routes/services');
 const bookingRoutes = require('./routes/bookings');
 const authRoutes = require('./routes/auth');
 const reviewRoutes = require('./routes/reviews');
+const adminRoutes = require('./routes/admin');
+const maintenanceRoutes = require('./routes/maintenance');
+const disputeRoutes = require('./routes/disputes');
 
 app.use('/api/providers', providerRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/disputes', disputeRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

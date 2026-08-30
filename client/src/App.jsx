@@ -11,6 +11,8 @@ import SignupPage from './pages/SignupPage';
 import CustomerDashboard from './pages/CustomerDashboard';
 import BookingDetails from './pages/BookingDetails';
 import ProviderDashboard from './pages/ProviderDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import CommercialDashboard from './pages/CommercialDashboard';
 
 function App() {
   return (
@@ -68,6 +70,42 @@ function App() {
             element={
               <ProtectedRoute requiredRole="provider">
                 <ProviderDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Protected Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Commercial / Mall Maintenance Routes */}
+          <Route
+            path="/mall/dashboard"
+            element={
+              <ProtectedRoute>
+                <CommercialDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mall"
+            element={
+              <ProtectedRoute>
+                <CommercialDashboard />
               </ProtectedRoute>
             }
           />

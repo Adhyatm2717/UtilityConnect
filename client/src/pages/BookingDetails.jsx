@@ -22,6 +22,49 @@ function BookingDetails() {
   const [reviewError, setReviewError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
 
+  // Dispute modal state
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('Unsatisfactory Quality');
+  const [disputeDesc, setDisputeDesc] = useState('');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+  const [disputeMsg, setDisputeMsg] = useState('');
+
+  const handleRaiseDispute = async (e) => {
+    e.preventDefault();
+    if (!disputeDesc.trim()) return;
+    setSubmittingDispute(true);
+    setDisputeMsg('');
+    try {
+      const res = await fetch('http://localhost:5001/api/disputes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bookingId: booking.bookingId || booking._id,
+          reason: disputeReason,
+          description: disputeDesc,
+        }),
+      });
+      const resData = await res.json();
+      if (res.ok) {
+        setDisputeMsg('Dispute submitted successfully! Our admin team will review it.');
+        setTimeout(() => {
+          setShowDisputeModal(false);
+          setDisputeDesc('');
+          setDisputeMsg('');
+        }, 1500);
+      } else {
+        setDisputeMsg(resData.error || 'Failed to submit dispute');
+      }
+    } catch (err) {
+      setDisputeMsg('Unable to connect to server');
+    } finally {
+      setSubmittingDispute(false);
+    }
+  };
+
   const fetchBooking = async () => {
     setLoading(true);
     setError('');
@@ -282,78 +325,159 @@ function BookingDetails() {
           </div>
         </div>
 
-        {/* Customer Review Section */}
-        {currentStatus === 'completed' && (
-          <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-6 shadow-sm">
-            <h3 className="text-[18px] font-bold text-on-background mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-500">star</span>
-              Service Review
-            </h3>
+        {/* Customer Review & Dispute Section */}
+        {user?.role === 'customer' && (
+          <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[18px] font-bold text-on-background flex items-center gap-2">
+                <span className="material-symbols-outlined text-amber-500">star</span>
+                Feedback & Support
+              </h3>
+              
+              <button
+                onClick={() => setShowDisputeModal(true)}
+                className="px-3.5 py-1.5 rounded-xl border border-error/40 text-error hover:bg-error-container/20 text-[13px] font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">gavel</span>
+                Raise Dispute
+              </button>
+            </div>
 
-            {review ? (
-              <div className="bg-surface-container border border-outline-variant/30 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <Rating value={review.rating} />
-                  <span className="text-[12px] text-outline">{new Date(review.createdAt).toLocaleDateString()}</span>
-                </div>
-                <p className="text-[14px] text-on-surface font-medium">{review.comment || 'No comment provided.'}</p>
-              </div>
-            ) : user?.role === 'customer' ? (
-              <form onSubmit={handleSubmitReview} className="space-y-4 max-w-lg">
-                {reviewError && (
-                  <div className="bg-error-container/50 border border-error/30 rounded-xl p-3 text-[13px] text-error">
-                    {reviewError}
+            {currentStatus === 'completed' && (
+              <>
+                {review ? (
+                  <div className="bg-surface-container border border-outline-variant/30 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <Rating value={review.rating} />
+                      <span className="text-[12px] text-outline">{new Date(review.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-[14px] text-on-surface font-medium">{review.comment || 'No comment provided.'}</p>
                   </div>
+                ) : (
+                  <form onSubmit={handleSubmitReview} className="space-y-4 max-w-lg">
+                    {reviewError && (
+                      <div className="bg-error-container/50 border border-error/30 rounded-xl p-3 text-[13px] text-error">
+                        {reviewError}
+                      </div>
+                    )}
+                    {reviewSuccess && (
+                      <div className="bg-emerald-100 border border-emerald-300 rounded-xl p-3 text-[13px] text-emerald-800 font-medium">
+                        {reviewSuccess}
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[13px] font-medium text-on-surface mb-1.5">Rating</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRating(star)}
+                            className="cursor-pointer text-[28px] focus:outline-none"
+                          >
+                            <span className={star <= rating ? 'text-amber-400' : 'text-outline-variant'}>★</span>
+                          </button>
+                        ))}
+                        <span className="text-[14px] font-bold text-on-surface ml-2">{rating} / 5</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[13px] font-medium text-on-surface mb-1.5">Comment</label>
+                      <textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Write a comment about the service experience..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl border border-outline-variant/50 bg-surface-container-low text-on-background text-[14px] outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="px-5 py-2.5 rounded-xl bg-primary-container text-on-primary text-[14px] font-semibold hover:bg-primary transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {submittingReview ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                  </form>
                 )}
-                {reviewSuccess && (
-                  <div className="bg-emerald-100 border border-emerald-300 rounded-xl p-3 text-[13px] text-emerald-800 font-medium">
-                    {reviewSuccess}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-[13px] font-medium text-on-surface mb-1.5">Rating</label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        className="cursor-pointer text-[28px] focus:outline-none"
-                      >
-                        <span className={star <= rating ? 'text-amber-400' : 'text-outline-variant'}>★</span>
-                      </button>
-                    ))}
-                    <span className="text-[14px] font-bold text-on-surface ml-2">{rating} / 5</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-medium text-on-surface mb-1.5">Comment</label>
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Write a comment about the service experience..."
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-outline-variant/50 bg-surface-container-low text-on-background text-[14px] outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingReview}
-                  className="px-5 py-2.5 rounded-xl bg-primary-container text-on-primary text-[14px] font-semibold hover:bg-primary transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  {submittingReview ? 'Submitting...' : 'Submit Review'}
-                </button>
-              </form>
-            ) : (
-              <p className="text-[13px] text-on-surface-variant font-medium">Awaiting customer review.</p>
+              </>
             )}
           </div>
         )}
 
       </div>
+
+      {/* Dispute Modal */}
+      {showDisputeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl max-w-md w-full p-6 shadow-xl relative">
+            <button
+              onClick={() => setShowDisputeModal(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface cursor-pointer"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+
+            <h3 className="text-[20px] font-bold text-on-background mb-1">Raise a Dispute</h3>
+            <p className="text-[13px] text-on-surface-variant mb-4">
+              Report an issue regarding Booking #{booking.bookingId} for admin review.
+            </p>
+
+            {disputeMsg && (
+              <div className="bg-emerald-100 border border-emerald-300 rounded-xl p-3 mb-4 text-[13px] text-emerald-800 font-medium">
+                {disputeMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleRaiseDispute} className="space-y-4">
+              <div>
+                <label className="block text-[13px] font-medium text-on-surface mb-1.5">Reason for Dispute</label>
+                <select
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/50 bg-surface-container-low text-on-background text-[14px] outline-none"
+                >
+                  <option value="Unsatisfactory Quality">Unsatisfactory Quality</option>
+                  <option value="Provider No-Show">Provider No-Show</option>
+                  <option value="Incorrect Pricing Charged">Incorrect Pricing Charged</option>
+                  <option value="Other Issue">Other Issue</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-on-surface mb-1.5">Description of Issue</label>
+                <textarea
+                  value={disputeDesc}
+                  onChange={(e) => setDisputeDesc(e.target.value)}
+                  placeholder="Explain what went wrong..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-outline-variant/50 bg-surface-container-low text-on-background text-[14px] outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDisputeModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-outline-variant/50 text-[13px] font-semibold text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingDispute}
+                  className="px-5 py-2.5 rounded-xl bg-error text-white text-[13px] font-semibold hover:bg-error/90 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submittingDispute ? 'Submitting...' : 'Submit Dispute'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

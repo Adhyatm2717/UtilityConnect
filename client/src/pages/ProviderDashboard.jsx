@@ -155,11 +155,31 @@ function ProviderDashboard() {
     );
   }
 
-  const { metrics, jobs = [], provider } = dashboardData || {};
+  const { metrics, jobs = [], commercialJobs = [], provider } = dashboardData || {};
 
   const pendingJobs = jobs.filter((j) => (j.status === 'Booking Requested' ? 'requested' : j.status) === 'requested');
   const activeJobs = jobs.filter((j) => ['accepted', 'in-progress'].includes(j.status));
   const completedJobs = jobs.filter((j) => j.status === 'completed');
+
+  const pendingCommercial = commercialJobs.filter((c) => c.status === 'Assigned');
+  const activeCommercial = commercialJobs.filter((c) => c.status === 'In Progress');
+  const completedCommercial = commercialJobs.filter((c) => c.status === 'Completed');
+
+  const handleUpdateCommercialStatus = async (requestId, newStatus) => {
+    try {
+      const res = await fetch(`http://localhost:5001/api/maintenance/${requestId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) fetchDashboard();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <main className="pt-[72px] min-h-screen bg-background pb-12">
@@ -261,9 +281,9 @@ function ProviderDashboard() {
         {/* Dashboard Navigation Tabs */}
         <div className="flex border-b border-outline-variant/30 gap-6 overflow-x-auto pb-1">
           {[
-            { id: 'requests', label: `Pending Requests (${pendingJobs.length})`, icon: 'notifications' },
-            { id: 'active', label: `Active Jobs (${activeJobs.length})`, icon: 'engineering' },
-            { id: 'completed', label: `Completed Jobs (${completedJobs.length})`, icon: 'task_alt' },
+            { id: 'requests', label: `Pending Requests (${pendingJobs.length + pendingCommercial.length})`, icon: 'notifications' },
+            { id: 'active', label: `Active Jobs (${activeJobs.length + activeCommercial.length})`, icon: 'engineering' },
+            { id: 'completed', label: `Completed Jobs (${completedJobs.length + completedCommercial.length})`, icon: 'task_alt' },
             { id: 'earnings', label: 'Earnings Breakdown', icon: 'payments' },
             { id: 'profile', label: 'Profile Settings', icon: 'person' },
           ].map((tab) => (

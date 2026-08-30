@@ -1,13 +1,23 @@
 const Provider = require('../models/Provider');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const MaintenanceRequest = require('../models/MaintenanceRequest');
 
 // @desc    Get all providers
 // @route   GET /api/providers
 // @access  Public
 exports.getProviders = async (req, res) => {
   try {
-    const providers = await Provider.find({});
+    const { all } = req.query;
+    // Default to verified providers for customer discovery unless all=true requested
+    const query = all === 'true' ? {} : { verified: true };
+    let providers = await Provider.find(query);
+
+    // Fallback: if no verified providers found in DB yet, return all providers
+    if (providers.length === 0 && query.verified) {
+      providers = await Provider.find({});
+    }
+
     res.status(200).json(providers);
   } catch (error) {
     res.status(500).json({ error: 'Server error fetching providers' });
@@ -44,7 +54,6 @@ exports.getProviderDashboard = async (req, res) => {
   try {
     let provider = await Provider.findOne({ userId: req.user.id });
     if (!provider) {
-      // Auto-create Provider profile if user is provider but doc missing
       const user = await User.findById(req.user.id);
       if (!user || user.role !== 'provider') {
         return res.status(403).json({ error: 'Access denied' });
@@ -62,13 +71,13 @@ exports.getProviderDashboard = async (req, res) => {
         startingPrice: 499,
         rating: 5.0,
         reviewCount: 0,
-        verified: true,
+        verified: false,
         availability: 'Available',
         location: 'Pune',
       });
     }
 
-    // Find all bookings for this provider
+    // Find all home service bookings for this provider
     const jobs = await Booking.find({
       $or: [
         { providerId: provider._id },
@@ -76,6 +85,11 @@ exports.getProviderDashboard = async (req, res) => {
         { providerSlug: provider.slug },
         { providerId: req.user.id }
       ]
+    }).sort({ createdAt: -1 });
+
+    // Find assigned commercial maintenance requests
+    const commercialJobs = await MaintenanceRequest.find({
+      assignedProvider: provider._id
     }).sort({ createdAt: -1 });
 
     const todayStr = new Date().toISOString().split('T')[0];
@@ -119,6 +133,12 @@ exports.getProviderDashboard = async (req, res) => {
       }
     });
 
+    // Add commercial jobs metrics
+    commercialJobs.forEach((cJob) => {
+      if (cJob.status === 'Assigned') pendingRequestsCount++;
+      if (cJob.status === 'Completed') completedJobsCount++;
+    });
+
     res.status(200).json({
       provider,
       metrics: {
@@ -134,6 +154,7 @@ exports.getProviderDashboard = async (req, res) => {
         availability: provider.availability || 'Available',
       },
       jobs,
+      commercialJobs,
     });
   } catch (error) {
     console.error('Provider dashboard error:', error);
@@ -194,7 +215,6 @@ exports.updateProviderProfile = async (req, res) => {
 
     await provider.save();
 
-    // Also update User record if name or phone changed
     if (name || phone) {
       const user = await User.findById(req.user.id);
       if (user) {

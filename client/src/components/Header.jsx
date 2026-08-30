@@ -32,7 +32,7 @@ function Header() {
   };
 
   const badge = roleBadge[user?.role] || roleBadge.customer;
-  const dashboardPath = user?.role === 'provider' ? '/provider/dashboard' : '/customer/dashboard';
+  const dashboardPath = user?.role === 'admin' ? '/admin/dashboard' : user?.role === 'provider' ? '/provider/dashboard' : '/customer/dashboard';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest border-b border-outline-variant/30 h-[72px]">
@@ -56,9 +56,12 @@ function Header() {
           <Link to="/services/electrician" className="text-on-surface-variant text-sm font-medium hover:text-primary no-underline transition-colors">
             Services
           </Link>
+          <Link to="/mall/dashboard" className="text-on-surface-variant text-sm font-medium hover:text-primary no-underline transition-colors">
+            Mall Services
+          </Link>
           {isAuthenticated && (
-            <Link to={dashboardPath} className="text-on-surface-variant text-sm font-medium hover:text-primary no-underline transition-colors">
-              {user?.role === 'provider' ? 'Provider Dashboard' : 'My Dashboard'}
+            <Link to={dashboardPath} className="text-on-surface-variant text-sm font-medium hover:text-primary no-underline transition-colors font-semibold text-primary">
+              {user?.role === 'admin' ? 'Admin Portal' : user?.role === 'provider' ? 'Provider Dashboard' : 'My Dashboard'}
             </Link>
           )}
         </nav>
@@ -105,16 +108,25 @@ function Header() {
                       Dashboard
                     </Link>
 
-                    {user?.role === 'customer' && (
+                    {user?.role === 'admin' && (
                       <Link
-                        to="/customer/dashboard#history"
+                        to="/admin/dashboard"
                         onClick={() => setMenuOpen(false)}
                         className="w-full text-left px-4 py-2 text-on-surface text-[13px] font-medium hover:bg-surface-container transition-colors flex items-center gap-2 no-underline"
                       >
-                        <span className="material-symbols-outlined text-[18px]">history</span>
-                        My Bookings
+                        <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                        Admin Control
                       </Link>
                     )}
+
+                    <Link
+                      to="/mall/dashboard"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full text-left px-4 py-2 text-on-surface text-[13px] font-medium hover:bg-surface-container transition-colors flex items-center gap-2 no-underline"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">storefront</span>
+                      Mall Maintenance
+                    </Link>
 
                     <button
                       id="logout-button"
